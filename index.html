@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1220">
+<title>Monitoreo de sala de clases</title>
+<style>
+:root{--bg:#0b1220;--panel:#111c2d;--panel2:#17263b;--line:#293b54;--text:#eaf1fa;--muted:#91a4bc;--blue:#63adff;--cyan:#51d5d0;--orange:#ffbd70;--purple:#bea6ff;--green:#55d6a0;--yellow:#ffd16f;--red:#ff7884}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 75% -15%,#1b3555 0,transparent 35%),var(--bg);color:var(--text);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif}
+.app{max-width:1450px;margin:auto;padding:24px}.topbar,.heading,.top-actions,.controls,.card-title,.metric-head,.metric-foot,.overall{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.topbar{margin-bottom:26px}.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#2e8fe8,#45d2d0);display:grid;place-items:center;color:#071522;font-size:21px;font-weight:900}.brand h1{font-size:17px;letter-spacing:1.1px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:10px;letter-spacing:1.4px}
+.pill,.select,.btn,.field{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 12px}.pill{font-size:11px;color:var(--muted)}.btn{cursor:pointer;font-weight:650}.btn:hover{border-color:var(--blue)}.btn.primary{background:#1d5f9d;border-color:#287bc2}.btn.active{background:#184c42;border-color:#2b9a75}.btn:disabled{opacity:.55;cursor:not-allowed}
+.heading{align-items:end;margin-bottom:18px}.eyebrow{color:var(--cyan);font-size:10px;letter-spacing:2px;font-weight:700;text-transform:uppercase}.heading h2{font-size:25px;margin:4px 0}.sub,.muted,.notice{color:var(--muted)}.sub{font-size:12px}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:15px}.card{background:linear-gradient(145deg,rgba(21,34,53,.98),rgba(15,26,42,.98));border:1px solid var(--line);border-radius:15px;padding:17px;min-width:0;box-shadow:0 12px 30px #0002}
+.metric{grid-column:span 4}.metric-head{font-size:11px;color:var(--muted)}.metric-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:#23354b}.value{font-size:35px;font-weight:750;letter-spacing:-1px;margin:14px 0 2px}.unit{font-size:13px;color:var(--muted);font-weight:500}.metric-foot{margin-top:12px;font-size:10px;color:var(--muted)}.status{padding:4px 8px;border-radius:20px;background:#183d35;color:#67dfae;font-weight:700;font-size:10px}.status.warn{background:#49351f;color:#ffc476}.status.bad{background:#48252d;color:#ff8991}
+.wide{grid-column:span 8}.side{grid-column:span 4}.half{grid-column:span 6}.full{grid-column:span 12}.card-title{margin-bottom:13px}.card-title h3{margin:0;font-size:14px}.card-title small{color:var(--muted);font-size:10px}.chart-wrap{height:220px}.chart-wrap canvas{width:100%;height:100%;display:block}
+.overall{justify-content:flex-start}.emoji{font-size:42px;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:#1c3044}.overall h3{margin:0 0 4px;font-size:15px}.overall p{margin:0;color:var(--muted);font-size:11px}
+.alerts{display:grid;gap:8px;margin-top:14px}.alert{display:flex;gap:10px;padding:10px;border-radius:9px;background:var(--panel2);font-size:11px}.alert strong{display:block;margin-bottom:2px}.alert span{color:var(--muted)}
+.controls{justify-content:flex-start}.field{width:100%;max-width:150px}.field-label{display:grid;gap:5px;color:var(--muted);font-size:10px}.notice{font-size:10px;margin-top:10px;line-height:1.55}.sensor-state{font-size:11px;color:var(--muted);margin-top:8px}.sensor-state strong{color:var(--text)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:11px;min-width:450px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted)}.tag{padding:3px 7px;border-radius:15px;background:#183d35;color:#70dfb0;font-size:10px}.footer{display:flex;justify-content:space-between;gap:10px;color:#71849d;font-size:10px;margin-top:18px;flex-wrap:wrap}
+@media(max-width:850px){.metric{grid-column:span 6}.wide,.side,.half{grid-column:span 12}}
+@media(max-width:520px){.app{padding:14px}.metric{grid-column:span 12}.heading h2{font-size:21px}.value{font-size:31px}.chart-wrap{height:190px}.topbar{margin-bottom:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+ <div class="brand"><div class="logo">MC</div><div><h1>MONITOREO DE SALA DE CLASES</h1><p>SISTEMA DE ANÁLISIS AMBIENTAL</p></div></div>
+ <div class="top-actions"><span class="pill" id="runState">● MODELO ACTIVO</span><span class="pill" id="clock">--:--:--</span></div>
+</header>
+<section class="heading">
+ <div><div class="eyebrow">Panel de control / Monitoreo ambiental</div><h2>Resumen de la sala</h2><div class="sub">Mediciones del micrófono y estimaciones basadas en las características del aula.</div></div>
+ <div class="controls"><button class="btn primary" id="micBtn">🎙 Activar micrófono</button><button class="btn" id="pauseBtn">Ⅱ Pausar modelo</button></div>
+</section>
+<section class="grid">
+ <article class="card metric"><div class="metric-head"><span>TEMPERATURA ESTIMADA</span><span class="metric-icon">🌡️</span></div><div class="value"><span id="tempValue">22.0</span><span class="unit"> °C</span></div><div class="metric-foot"><span>Modelo térmico orientativo</span><span class="status" id="tempStatus">REFERENCIAL</span></div></article>
+ <article class="card metric"><div class="metric-head"><span>CO₂ ESTIMADO</span><span class="metric-icon">◉</span></div><div class="value"><span id="co2Value">420</span><span class="unit"> ppm</span></div><div class="metric-foot"><span>Modelo de ventilación y ocupación</span><span class="status" id="co2Status">CALCULANDO</span></div></article>
+ <article class="card metric"><div class="metric-head"><span>RUIDO AMBIENTAL</span><span class="metric-icon">♫</span></div><div class="value"><span id="noiseValue">--</span><span class="unit"> nivel relativo</span></div><div class="metric-foot"><span id="noiseHint">Activa el micrófono para medir</span><span class="status warn" id="noiseStatus">SIN MEDICIÓN</span></div></article>
+ <article class="card wide"><div class="card-title"><div><h3>Evolución de las condiciones ambientales</h3><small>Historial de estimaciones y mediciones recientes</small></div></div><div class="chart-wrap"><canvas id="chart"></canvas></div><div class="notice">Las líneas representan tendencias; las variables se normalizan para compararlas visualmente.</div></article>
+ <article class="card side"><div class="card-title"><h3>Calidad de la sala</h3><small>Evaluación orientativa</small></div><div class="overall"><div class="emoji" id="qualityEmoji">🟡</div><div><h3 id="qualityTitle">Evaluando...</h3><p id="qualityText">Se calcula con CO₂, temperatura y ruido.</p></div></div><div class="alerts" id="alerts"><div class="alert">ℹ️ <span>El resultado es una referencia, no una certificación de calidad del aire.</span></div></div></article>
+ <article class="card half"><div class="card-title"><h3>Configuración del aula</h3><small>Parámetros del modelo</small></div>
+  <div class="controls">
+   <label class="field-label">Personas habituales<input class="field" id="people" type="number" min="1" max="200" value="40"></label>
+   <label class="field-label">Superficie (m²)<input class="field" id="area" type="number" min="10" max="1000" value="60"></label>
+   <label class="field-label">Altura (m)<input class="field" id="height" type="number" min="2" max="8" step=".1" value="3"></label>
+   <label class="field-label">Ventilación<select class="select" id="vent"><option value="1">Natural limitada</option><option value="2">Natural frecuente</option><option value="4" selected>Mecánica</option><option value="6">Mecánica alta</option></select></label>
+   <label class="field-label">Temperatura inicial (°C)<input class="field" id="initialTemp" type="number" min="10" max="35" step=".5" value="22"></label>
+  </div><div class="notice">Valores iniciales tomados de la configuración del proyecto: 40 personas, 60 m² y ventilación mecánica. La altura y temperatura inicial son supuestos editables.</div>
+ </article>
+ <article class="card half"><div class="card-title"><h3>Micrófono del dispositivo</h3><small>Permiso controlado por el usuario</small></div>
+  <p class="muted" style="font-size:12px;margin-top:0">El navegador solicitará permiso únicamente cuando pulses el botón. El audio se analiza localmente para estimar la intensidad del sonido; no se graba ni se envía.</p>
+  <div class="controls"><button class="btn primary" id="micToggle">🎙 Dar permiso y comenzar</button><button class="btn" id="micStop" disabled>Detener micrófono</button></div>
+  <div class="sensor-state" id="micState">Estado: <strong>No autorizado / inactivo</strong></div>
+  <div class="notice">Importante: el valor es un indicador relativo del micrófono, no una medición certificada en dBA. La sensibilidad depende del modelo del teléfono y del navegador. Usa el sitio mediante HTTPS (por ejemplo, GitHub Pages).</div>
+ </article>
+ <article class="card full"><div class="card-title"><h3>Últimos registros</h3><small id="lastUpdate">Esperando actualización</small></div><div class="table-wrap"><table><thead><tr><th>HORA</th><th>TEMP. EST.</th><th>CO₂ EST.</th><th>RUIDO REL.</th><th>CALIDAD</th></tr></thead><tbody id="historyBody"></tbody></table></div></article>
+ <article class="card full"><div class="card-title"><h3>Cómo se obtienen los datos</h3></div>
+  <div class="notice" style="font-size:11px">
+   <b>CO₂:</b> modelo simplificado de balance de masa que considera generación estimada por ocupante, volumen del recinto, concentración exterior de referencia y renovaciones de aire por hora. No reemplaza un sensor NDIR.<br>
+   <b>Temperatura:</b> parte de una temperatura inicial ingresada y simula cambios por ocupación y ventilación. El teléfono no entrega una lectura fiable de la temperatura del aire del aula mediante el navegador.<br>
+   <b>Ruido:</b> análisis de amplitud del micrófono. No se almacenan muestras de audio.<br>
+   <b>Privacidad:</b> el micrófono permanece apagado hasta que el usuario concede permiso y puede detenerse en cualquier momento.
+  </div>
+ </article>
+</section>
+<footer class="footer"><span>MONITOREO DE SALA DE CLASES · PROTOTIPO ACADÉMICO</span><span>Estimaciones orientativas; no sustituye instrumentos ambientales.</span></footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let paused=false, timer=null, micStream=null, audioContext=null, analyser=null, micFrame=null;
+let co2=420, temp=22, noise=null, history=[];
+const outdoorCO2=420, generationPerPerson=0.004; // L/s por persona, supuesto de modelo
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const timeLabel=()=>new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+function params(){return {people:clamp(Number($('people').value)||40,1,200),area:clamp(Number($('area').value)||60,10,1000),height:clamp(Number($('height').value)||3,2,8),ach:Number($('vent').value)||4,initialTemp:clamp(Number($('initialTemp').value)||22,10,35)}}
+function status(v,type){
+ if(type==='co2')return v<1000?['ADECUADO','ok']:v<1500?['ELEVADO','warn']:['ALTO','bad'];
+ if(type==='temp')return v>=20&&v<=26?['REFERENCIAL','ok']:v>=18&&v<=28?['REVISAR','warn']:['FUERA DE RANGO','bad'];
+ if(v===null)return ['SIN MEDICIÓN','warn'];
+ return v<35?['BAJO','ok']:v<60?['MODERADO','warn']:['ALTO','bad'];
+}
+function setStatus(id,s){$(id).textContent=s[0];$(id).className='status '+(s[1]==='ok'?'':s[1]==='warn'?'warn':'bad')}
+function quality(){
+ const c=status(co2,'co2')[1],t=status(temp,'temp')[1],n=noise===null?'unknown':status(noise,'noise')[1];
+ let bad=[c,t,n].filter(x=>x==='bad').length,warn=[c,t,n].filter(x=>x==='warn').length;
+ if(bad>0){$('qualityEmoji').textContent='🔴';$('qualityTitle').textContent='Calidad baja';$('qualityText').textContent='Hay variables que requieren atención.'}
+ else if(warn>0||n==='unknown'){$('qualityEmoji').textContent='🟡';$('qualityTitle').textContent='Calidad regular';$('qualityText').textContent=n==='unknown'?'Activa el micrófono para completar la evaluación.':'Conviene revisar algunas condiciones.'}
+ else{$('qualityEmoji').textContent='🟢';$('qualityTitle').textContent='Buena calidad';$('qualityText').textContent='Las variables estimadas están dentro de los rangos configurados.'}
+ const alerts=[];
+ if(c!=='ok')alerts.push(['🌬️','CO₂ '+status(co2,'co2')[0],'Revisa la ventilación o reduce la ocupación.']);
+ if(t!=='ok')alerts.push(['🌡️','Temperatura '+status(temp,'temp')[0],'Contrasta la estimación con un termómetro ambiental.']);
+ if(n==='unknown')alerts.push(['🎙','Ruido sin medir','Autoriza el micrófono si deseas medir el nivel relativo.']);
+ else if(n!=='ok')alerts.push(['🔊','Ruido '+status(noise,'noise')[0],'Revisa las fuentes de ruido de la sala.']);
+ $('alerts').innerHTML=alerts.length?alerts.map(a=>`<div class="alert"><span>${a[0]}</span><div><strong>${a[1]}</strong><span>${a[2]}</span></div></div>`).join(''):'<div class="alert"><span>✓</span><div><strong>Sin alertas</strong><span>Según los parámetros estimados.</span></div></div>';
+}
+function draw(){
+ const canvas=$('chart'),ctx=canvas.getContext('2d'),rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+ canvas.width=Math.max(300,rect.width)*dpr;canvas.height=Math.max(150,rect.height)*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+ const w=canvas.width/dpr,h=canvas.height/dpr,left=38,right=10,top=12,bottom=24,cw=w-left-right,ch=h-top-bottom;
+ ctx.clearRect(0,0,w,h);ctx.font='10px Segoe UI';ctx.fillStyle='#91a4bc';ctx.strokeStyle='#293b54';
+ for(let i=0;i<4;i++){let y=top+ch*i/3;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke()}
+ const sets=[{key:'temp',min:15,max:32,color:'#63adff'},{key:'co2',min:400,max:1800,color:'#51d5d0'},{key:'noise',min:0,max:100,color:'#bea6ff'}];
+ sets.forEach(s=>{let vals=history.map(x=>x[s.key]).filter(v=>v!==null);if(!vals.length)return;ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();let started=false;history.forEach((p,i)=>{let v=p[s.key];if(v===null)return;let x=left+(history.length<=1?0:i/(history.length-1))*cw,y=top+ch-(clamp(v,s.min,s.max)-s.min)/(s.max-s.min)*ch;if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)});ctx.stroke()});
+}
+function render(){
+ $('tempValue').textContent=temp.toFixed(1);$('co2Value').textContent=Math.round(co2);$('noiseValue').textContent=noise===null?'--':Math.round(noise);
+ setStatus('tempStatus',status(temp,'temp'));setStatus('co2Status',status(co2,'co2'));setStatus('noiseStatus',status(noise,'noise'));quality();
+ $('historyBody').innerHTML=history.slice(-6).reverse().map(x=>`<tr><td>${x.time}</td><td>${x.temp.toFixed(1)} °C</td><td>${Math.round(x.co2)} ppm</td><td>${x.noise===null?'--':Math.round(x.noise)}</td><td>${x.quality}</td></tr>`).join('');
+ $('lastUpdate').textContent='Actualizado '+timeLabel();draw();
+}
+function step(){
+ if(paused)return;
+ const p=params(),volume=p.area*p.height,dt=5;
+ // Balance simplificado: ppm/s = generación interior - eliminación por ventilación.
+ const source=(p.people*generationPerPerson/1000)/volume*1e6;
+ const removal=(p.ach/3600)*(co2-outdoorCO2);
+ co2=clamp(co2+(source-removal)*dt, outdoorCO2, 5000);
+ // Estimación térmica: carga humana simplificada y relajación hacia 20 °C por ventilación.
+ const heat=p.people*75/(volume*1200); // incremento térmico aproximado por segundo
+ temp=clamp(temp+(heat-(p.ach/3600)*(temp-20))*dt,10,35);
+ const q=status(co2,'co2')[1]==='bad'||status(temp,'temp')[1]==='bad'?'Mala':status(co2,'co2')[1]==='warn'||status(temp,'temp')[1]==='warn'||noise===null||status(noise,'noise')[1]==='warn'?'Regular':'Buena';
+ history.push({time:timeLabel(),temp,co2,noise,quality:q});if(history.length>30)history.shift();render();
+}
+function resetModel(){const p=params();temp=p.initialTemp;co2=outdoorCO2;history=[];step()}
+async function startMic(){
+ if(micStream)return;
+ if(!navigator.mediaDevices?.getUserMedia){$('micState').innerHTML='Estado: <strong>Este navegador no permite acceder al micrófono. Usa HTTPS y un navegador compatible.</strong>';return}
+ try{
+  micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:false});
+  audioContext=new (window.AudioContext||window.webkitAudioContext)();
+  const source=audioContext.createMediaStreamSource(micStream);analyser=audioContext.createAnalyser();analyser.fftSize=2048;source.connect(analyser);
+  const data=new Uint8Array(analyser.fftSize);
+  function sample(){
+   if(!analyser)return;
+   analyser.getByteTimeDomainData(data);let sum=0;
+   for(let i=0;i<data.length;i++){let x=(data[i]-128)/128;sum+=x*x}
+   const rms=Math.sqrt(sum/data.length);
+   // Indicador relativo normalizado. No es dBA ni está calibrado.
+   const db=clamp(20*Math.log10(Math.max(rms,0.00001))+90,0,100);
+   noise=noise===null?db:noise*.75+db*.25;
+   $('noiseHint').textContent='Micrófono activo · nivel relativo, no calibrado';
+   $('micState').innerHTML='Estado: <strong>Micrófono autorizado y activo</strong>';
+   setStatus('noiseStatus',status(noise,'noise'));$('noiseValue').textContent=Math.round(noise);quality();
+   micFrame=requestAnimationFrame(sample);
+  }
+  $('micToggle').disabled=true;$('micStop').disabled=false;$('micBtn').textContent='🎙 Micrófono activo';$('micBtn').classList.add('active');sample();
+ }catch(err){
+  $('micState').innerHTML='Estado: <strong>Permiso denegado o micrófono no disponible.</strong>';
+  $('noiseHint').textContent='No se pudo acceder al micrófono';
+ }
+}
+function stopMic(){
+ if(micFrame)cancelAnimationFrame(micFrame);micFrame=null;
+ if(micStream)micStream.getTracks().forEach(t=>t.stop());micStream=null;analyser=null;
+ if(audioContext){audioContext.close();audioContext=null}
+ $('micToggle').disabled=false;$('micStop').disabled=true;$('micBtn').textContent='🎙 Activar micrófono';$('micBtn').classList.remove('active');
+ $('micState').innerHTML='Estado: <strong>Micrófono apagado</strong>';$('noiseHint').textContent='Activa el micrófono para medir';noise=null;render();
+}
+$('micBtn').onclick=startMic;$('micToggle').onclick=startMic;$('micStop').onclick=stopMic;
+$('pauseBtn').onclick=()=>{paused=!paused;$('pauseBtn').textContent=paused?'▶ Reanudar modelo':'Ⅱ Pausar modelo';$('runState').textContent=paused?'Ⅱ MODELO PAUSADO':'● MODELO ACTIVO';if(!paused)step()};
+['people','area','height','vent','initialTemp'].forEach(id=>$(id).addEventListener('change',resetModel));
+setInterval(()=>{$('clock').textContent=new Date().toLocaleString('es-CL',{weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})},1000);
+window.addEventListener('resize',draw);
+resetModel();timer=setInterval(step,5000);
+window.addEventListener('beforeunload',stopMic);
+</script>
+</body>
+</html>
